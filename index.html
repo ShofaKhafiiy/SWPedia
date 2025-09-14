@@ -8,32 +8,54 @@
     <script src="https://unpkg.com/heroicons@2.1.3/24/outline/index.js"></script>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
+  <body class="bg-gray-900 text-white min-h-screen p-4">
     <!-- header -->
     <div class="container mx-auto p-4 md:p-8 max-w-4xl">
       <header class="text-center mb-8">
-        <h1 class="text-4xl">Galeri SWPedia</h1>
-        <p>halo</p>
+        <h1
+          class="text-4xl md:text-5xl font-bold text-yellow-400 tracking-wider"
+        >
+          Galeri SWPedia
+        </h1>
+        <p class="text-4xl mt-2 text-lg">Pilih Karakter</p>
       </header>
     </div>
 
     <!-- Bagian memilih karakter -->
-    <div>
-      <label for="characterSelect">pilih Karakter:</label>
-      <select name="" id="characterSelect">
+    <div class="mb-8">
+      <label
+        for="characterSelect"
+        class="block mb-2 text-sm font-medium text-gray-400 mt-2"
+        >pilih Karakter:</label
+      >
+      <select
+        name=""
+        id="characterSelect"
+        class="bg-gray-800 border border-gray-600 text-white text-base rounded-md focus:ring-yellow-500 focus:border-yellow-500 block w-full p-4"
+      >
         <option selected>Memuat daftar karakter...</option>
       </select>
     </div>
 
     <!-- untuk menampilkan hasil -->
-    <div id="resultContainer">
-      <p>Pilih seorang karakter untuk memulai</p>
+    <div
+      id="resultContainer"
+      class="min-h-[300px] flex items-center justify-center bg-gray-800/50 rounded-lg p-6"
+    >
+      <p class="text-gray-500">
+        Pilih seorang karakter untuk menampilkan karakter
+      </p>
     </div>
 
     <!-- footer -->
-    <footer>
+    <footer class="text-center mt-8 text-gray-600 text-sm">
       Data diambil dari
-      <a href=""></a>
+      <a
+        href="https://swapi.tech/"
+        target="_blank"
+        class="underline hover:text-yellow-400"
+        >SWAPI</a
+      >. Ditenagai oleh The Force.
     </footer>
 
     <script src="app.js"></script>
