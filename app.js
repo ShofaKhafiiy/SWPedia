@@ -26,8 +26,8 @@ class SwapiService {
     return allCharacter;
   }
 
-  async fetchDetailCharacter(idCharacter) {
-    const response = await fetch(`${this.baseUrl}people/${idCharacter}`);
+  async fetchDetailCharacter(urlCharacter) {
+    const response = await fetch(urlCharacter);
     if (!response.ok) throw new Error("Gagal mengambil detail karakter");
     const data = await response.json();
     return data.result.properties;
@@ -92,7 +92,7 @@ class UiManager {
       filmTitles.length > 0
         ? `<div class="mt-6">
       <h3 class="text-xl font-semibold text-yellow-400 mb-2">Penampilan di Film</h3>
-      <ul class"list-disc list-inside text-gray-300 space-y-1">${filmTitles
+      <ul class="list-disc list-inside text-gray-300 space-y-1">${filmTitles
         .map((title) => `<li>${title}</li>`)
         .join("")}</ul></div>`
         : "";
@@ -169,8 +169,6 @@ class SwapiApp {
         "Gagal mengambil data dari arsip. Mungkin ada gangguan pada Force."
       );
     }
-
-    this.uiManager.showLoading("Mengakses Server...");
   }
 }
 
