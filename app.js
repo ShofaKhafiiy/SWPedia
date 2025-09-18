@@ -1,149 +1,180 @@
 const characterSelect = document.getElementById("characterSelect");
 const resultContainer = document.getElementById("resultContainer");
 
-/* 
-Menggambil semua karakter dari API
+/* class SwapiService
+Bertugas untuk menghandle atau berkomunikasi dengan API
 */
 
-async function fetchAllCharacter() {
-  let allCharacters = [];
-  let nextUrl = "https://swapi.tech/api/people/";
-
-  while (nextUrl) {
-    const response = await fetch(nextUrl);
-    const data = await response.json();
-    allCharacters = allCharacters.concat(data.results);
-    console.log(allCharacters);
-    nextUrl = data.next;
+class SwapiService {
+  constructor() {
+    this.baseUrl = "https://swapi.tech/api/";
   }
 
-  return allCharacters;
-}
+  async fetchAllCharacters() {
+    let allCharacter = [];
+    let nextUrl = `${this.baseUrl}people/`;
 
-/* inisialisasi mengisi dropdown dengan daftar karakter */
-
-async function initializeApp() {
-  try {
-    const characters = await fetchAllCharacter();
-    characters.sort((a, b) => a.name.localeCompare(b.name));
-
-    characterSelect.innerHTML = `<option value="">-- Pilih Karakter --</option>`;
-
-    characters.forEach((char) => {
-      const option = document.createElement("option");
-
-      option.value = char.uid;
-      option.textContent = char.name;
-      characterSelect.appendChild(option);
-    });
-  } catch (err) {
-    characterSelect.innerHTML = `<option>Gagal memuat karakter</option>`;
-    console.error("initialization Error", err);
-  }
-}
-
-//menampilkan detail karakter di resultContainer
-
-async function displayCharacterDetails(characterId) {
-  if (!characterId) {
-    resultContainer.innerHTML = `<p class="text-gray-500">Pilih seorang karakter untuk memulai.</option>`;
-    return;
-  }
-
-  //menampilkan status loading
-  resultContainer.innerHTML = `<div class= "flex flex-col items-center gap-4">
-      <div class="loader"></div>
-      <p class = "text-gray-400">Mengakses karakter...</p>
-  </div>
-  `;
-
-  try {
-    /*   mengambil detail karakter yang dipilih kemudian di tampilkan di result continer */
-    const characterResponse = await fetch(
-      `https://swapi.tech/api/people/${characterId}/`
-    );
-
-    if (!characterResponse.ok) {
-      throw new Error("Karakter tidak ditemukan.");
+    while (nextUrl) {
+      const response = await fetch(nextUrl);
+      if (!response.ok) throw new Error("Gagal mengambil daftar karakter");
+      const data = await response.json();
+      allCharacter = allCharacter.concat(data.results);
+      nextUrl = data.next;
     }
-    const characterData = await characterResponse.json();
-    const character = characterData.result.properties;
 
-    //mengambil detail semua film secara bersamaan
-    const filmPromise = character.films.map((filmUrl) =>
-      fetch(filmUrl).then((res) => res.json())
+    console.log(allCharacter);
+    return allCharacter;
+  }
+
+  async fetchDetailCharacter(idCharacter) {
+    const response = await fetch(`${this.baseUrl}people/${idCharacter}`);
+    if (!response.ok) throw new Error("Gagal mengambil detail karakter");
+    const data = await response.json();
+    return data.result.properties;
+  }
+
+  async fetchMovieTitles(movieUrls) {
+    if (!movieUrls || movieUrls.length === 0) return [];
+
+    const filmUrls = movieUrls.map((url) =>
+      fetch(url).then((res) => res.json())
     );
 
-    const filmDataResult = await Promise.all(filmPromise);
-    const filmTitles = filmDataResult.map(
-      (filmData) => filmData.result.properties.title
-    );
+    const filmDataResult = await Promise.all(filmUrls);
+    return filmDataResult.map((data) => data.result.properties.title);
+  }
+}
 
-    //membuat HTML untuk ditampilkan
+/* Class UiManager
+Untuk Memanipulasi DOM
+*/
+
+class UiManager {
+  constructor() {
+    this.characterSelect = document.getElementById("characterSelect");
+    this.resultContainer = document.getElementById("resultContainer");
+  }
+
+  showLoading(message) {
+    this.resultContainer.innerHTML = `    <div class="flex flex-col items-center gap-4">
+                        <div class="loader"></div>
+                        <p class="text-gray-400">${message}</p>
+                    </div>`;
+  }
+
+  showInitialMessage() {
+    this.resultContainer.innerHTML = `<p class = "text-gray-500">Pilih seorang karakter dari arsip untuk memulai.</p>`;
+  }
+
+  showError(message) {
+    this.resultContainer.innerHTML = `<p class = "text-red-500">${message}</p>`;
+  }
+
+  populateCharacterSelect(characters) {
+    this.characterSelect.innerHTML =
+      '<option value="">-- Pilih seorang karakter --</option>';
+    characters
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .forEach((char) => {
+        const option = document.createElement("option");
+        option.value = char.url;
+        option.textContent = char.name;
+        this.characterSelect.appendChild(option);
+      });
+  }
+
+  displayCharacterDetails(character, filmTitles) {
     const characterImage = `https://placehold.co/400x500/1F2937/FBBF24?text=${encodeURIComponent(
       character.name
     )}`;
 
+    const filmsHtml =
+      filmTitles.length > 0
+        ? `<div class="mt-6">
+      <h3 class="text-xl font-semibold text-yellow-400 mb-2">Penampilan di Film</h3>
+      <ul class"list-disc list-inside text-gray-300 space-y-1">${filmTitles
+        .map((title) => `<li>${title}</li>`)
+        .join("")}</ul></div>`
+        : "";
+
     const detailsHtml = `
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 w-full">
-                        <!-- Kolom Gambar -->
                         <div class="md:col-span-1">
-                            <img src="${characterImage}" alt="Potret ${
-      character.name
-    }" class="rounded-lg shadow-lg w-full h-auto object-cover">
+                            <img src="${characterImage}" alt="Potret ${character.name}" class="rounded-lg shadow-lg w-full h-auto object-cover">
                         </div>
-
-                        <!-- Kolom Detail -->
                         <div class="md:col-span-2">
-                            <h2 class="text-3xl font-bold text-yellow-400 border-b-2 border-gray-700 pb-2 mb-4">${
-                              character.name
-                            }</h2>
+                            <h2 class="text-3xl font-bold text-yellow-400 border-b-2 border-gray-700 pb-2 mb-4">${character.name}</h2>
                             <div class="grid grid-cols-2 gap-4 text-base">
-                                <div><strong class="text-gray-400">Tinggi:</strong> ${
-                                  character.height
-                                } cm</div>
-                                <div><strong class="text-gray-400">Berat:</strong> ${
-                                  character.mass
-                                } kg</div>
-                                <div><strong class="text-gray-400">Warna Rambut:</strong> ${
-                                  character.hair_color
-                                }</div>
-                                <div><strong class="text-gray-400">Warna Kulit:</strong> ${
-                                  character.skin_color
-                                }</div>
-                                <div><strong class="text-gray-400">Warna Mata:</strong> ${
-                                  character.eye_color
-                                }</div>
-                                <div><strong class="text-gray-400">Tahun Lahir:</strong> ${
-                                  character.birth_year
-                                }</div>
+                                <div><strong class="text-gray-400">Tinggi:</strong> ${character.height} cm</div>
+                                <div><strong class="text-gray-400">Berat:</strong> ${character.mass} kg</div>
+                                <div><strong class="text-gray-400">Rambut:</strong> ${character.hair_color}</div>
+                                <div><strong class="text-gray-400">Kulit:</strong> ${character.skin_color}</div>
+                                <div><strong class="text-gray-400">Mata:</strong> ${character.eye_color}</div>
+                                <div><strong class="text-gray-400">Lahir:</strong> ${character.birth_year}</div>
                             </div>
-
-                            <!-- Daftar Film -->
-                            <div class="mt-6">
-                                <h3 class="text-xl font-semibold text-yellow-400 mb-2">Penampilan di Film</h3>
-                                <ul class="list-disc list-inside text-gray-300 space-y-1">
-                                    ${filmTitles
-                                      .map((title) => `<li>${title}</li>`)
-                                      .join("")}
-                                </ul>
-                            </div>
+                            ${filmsHtml}
                         </div>
-                    </div>
-                `;
-
-    resultContainer.innerHTML = detailsHtml;
-  } catch (err) {
-    console.error("Display Error:", err);
-    resultContainer.innerHTML = `<p class="text-red-400">Gagal mengambil data dari arsip. Mungkin ada gangguan pada Force. (${err.message})</p>`;
+                    </div>`;
+    this.resultContainer.innerHTML = detailsHtml;
   }
 }
 
-//menambahkan event Listener ke dropdown
+/* 
+Class swapiapp mengatur alur kerja aplikasi
 
-characterSelect.addEventListener("change", (e) => {
-  displayCharacterDetails(e.target.value);
-  console.log(e.target.value);
+*/
+
+class SwapiApp {
+  constructor() {
+    this.swapiService = new SwapiService();
+    this.uiManager = new UiManager();
+  }
+
+  async init() {
+    try {
+      const characters = await this.swapiService.fetchAllCharacters();
+      this.uiManager.populateCharacterSelect(characters);
+
+      this.uiManager.characterSelect.addEventListener(
+        "change",
+        this.handleCharacterSelect.bind(this)
+      );
+    } catch (error) {
+      console.error("Initialization Error:", error);
+      this.uiManager.showError("Gagal memuat daftar karakter dari arsip.");
+    }
+  }
+
+  async handleCharacterSelect(event) {
+    const chacarterId = event.target.value;
+    if (!chacarterId) {
+      this.uiManager.showInitialMessage();
+      return;
+    }
+
+    this.uiManager.showLoading("Mengakses server...");
+
+    try {
+      const character = await this.swapiService.fetchDetailCharacter(
+        chacarterId
+      );
+      const filmTitles = await this.swapiService.fetchMovieTitles(
+        character.films
+      );
+
+      this.uiManager.displayCharacterDetails(character, filmTitles);
+    } catch (err) {
+      console.error("Display Error:", err);
+      this.uiManager.showError(
+        "Gagal mengambil data dari arsip. Mungkin ada gangguan pada Force."
+      );
+    }
+
+    this.uiManager.showLoading("Mengakses Server...");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const app = new SwapiApp();
+  app.init();
 });
-
-initializeApp();
